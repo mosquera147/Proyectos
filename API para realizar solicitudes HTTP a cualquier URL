@@ -1,0 +1,114 @@
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
+
+public class Api {
+
+    private static final Map<String, String> HEADERS = new HashMap<>();
+
+    static {
+        HEADERS.put("Content-Type", "application/json");
+    }
+
+    public static void main(String[] args) throws IOException {
+        PrintWriter writer = new PrintWriter(System.out);
+
+        // Obtener el método de solicitud y la ruta del usuario
+        String método = args[0];
+        String ruta = args[1];
+
+        // Crear un nuevo objeto de solicitud
+        Request solicitud = new Request(método, ruta);
+
+        // Agregar las cabeceras a la solicitud
+        for (Map.Entry<String, String> encabezado : HEADERS.entrySet()) {
+            solicitud.addHeader(encabezado.getKey(), encabezado.getValue());
+        }
+
+        // Enviar la solicitud y obtener la respuesta
+        Response respuesta = solicitud.send();
+
+        // Imprimir la respuesta en la consola
+        writer.println(respuesta.getBody());
+
+        writer.close();
+    }
+
+}
+
+class Request {
+
+    private String método;
+    private String ruta;
+    private Map<String, String> encabezados;
+
+    public Request(String método, String ruta) {
+        this.método = método;
+        this.ruta = ruta;
+        this.encabezados = new HashMap<>();
+    }
+
+    public void addHeader(String clave, String valor) {
+        this.encabezados.put(clave, valor);
+    }
+
+    public Response send() throws IOException {
+        // Crear un nuevo objeto URL para la solicitud
+        URL url = new URL(ruta);
+
+        // Crear un nuevo objeto HttpURLConnection para la solicitud
+        HttpURLConnection conexión = (HttpURLConnection) url.openConnection();
+
+        // Establecer el método de solicitud
+        conexión.setRequestMethod(método);
+
+        // Establecer las cabeceras de la solicitud
+        for (Map.Entry<String, String> encabezado : encabezados.entrySet()) {
+            conexión.setRequestProperty(encabezado.getKey(), encabezado.getValue());
+        }
+
+        // Obtener el código de respuesta
+        int códigoDeRespuesta = conexión.getResponseCode();
+
+        // Obtener el mensaje de respuesta
+        String mensajeDeRespuesta = conexión.getResponseMessage();
+
+        // Obtener el cuerpo de respuesta
+        InputStream inputStream = conexión.getInputStream();
+        byte[] cuerpoDeRespuesta = new byte[inputStream.available()];
+        inputStream.read(cuerpoDeRespuesta);
+
+        // Crear un nuevo objeto de respuesta
+        Response respuesta = new Response(códigoDeRespuesta, mensajeDeRespuesta, cuerpoDeRespuesta);
+
+        return respuesta;
+    }
+
+}
+
+class Response {
+
+    private int códigoDeEstado;
+    private String mensajeDeEstado;
+    private byte[] cuerpo;
+
+    public Response(int códigoDeEstado, String mensajeDeEstado, byte[] cuerpo) {
+        this.códigoDeEstado = códigoDeEstado;
+        this.mensajeDeEstado = mensajeDeEstado;
+        this.cuerpo = cuerpo;
+    }
+
+    public int getCódigoDeEstado() {
+        return códigoDeEstado;
+    }
+
+    public String getMensajeDeEstado() {
+        return mensajeDeEstado;
+    }
+
+    public byte[] getCuerpo() {
+        return cuerpo;
+    }
+
+}
